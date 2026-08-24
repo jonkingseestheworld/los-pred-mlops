@@ -1,0 +1,9 @@
+{
+  // Pin this project's Python interpreter to the uv-managed virtual env.
+  // uv creates and owns .venv; VS Code only reads it. Manage packages with
+  // `uv add` / `uv remove`, never pip install or VS Code's env UI.
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+  // Activate .venv automatically in new integrated terminals.
+  "python.terminal.activateEnvironment": true
+}
