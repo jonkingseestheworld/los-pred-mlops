@@ -223,3 +223,8 @@ data/*
 
 .vscode/*
 !.vscode/settings.json
+
+# MLflow local tracking (Phase 2) — DB + model artifacts, not for git
+mlflow.db
+mlruns/
+mlartifacts/
