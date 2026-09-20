@@ -55,9 +55,78 @@ jupyter notebook notebooks/01_eda.ipynb
 ```
 Covers data overview, distributions, correlations, and baseline predictions.
 
-**3. Training (Phase 2)**
+**3. Training & experiment tracking (Phase 2)**
 ```bash
-uv add mlflow scikit-learn xgboost
+uv add mlflow lightgbm scikit-learn xgboost
+```
+
+Train the model and run the target-treatment experiment (l2 / log1p / poisson).
+The best variant is registered in the local MLflow Model Registry as `los-pred-los`:
+```bash
 uv run python -m los_pred.train
 ```
-Runs controlled experiments on target transformations and logs results to MLflow.
+
+Compare algorithms (LightGBM vs XGBoost) on a fixed target treatment. Logged to a
+separate `los-pred-algo` experiment; prints a winner but does not register:
+```bash
+uv run python -m los_pred.compare_algos                 # default: log1p
+uv run python -m los_pred.compare_algos --treatment l2
+```
+
+Inspect runs, metrics, and registered models in the MLflow UI:
+```bash
+uv run mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+
+Practice the promotion lifecycle (Candidate → Staging → Production, mapped to
+MLflow 3 aliases `@candidate` → `@staging` → `@champion`):
+```bash
+uv run python -m los_pred.registry --assign champion --version 2
+uv run python -m los_pred.registry --show
+```
+Downstream code then loads the **live model by alias**, not a version number, so a
+promotion needs no code change (see `docs/model_registry_note.md`):
+```python
+import mlflow.lightgbm
+model = mlflow.lightgbm.load_model("models:/los-pred-los@champion")
+```
+
+Residual analysis of the registered model (bias, LOS-17 ceiling effect,
+heteroscedasticity, and documented limitations):
+```bash
+jupyter notebook notebooks/04_posthoc_analysis.ipynb
+```
+
+> **Note — MLflow artifacts are local-only.** `mlflow.db`, `mlruns/`, and `mlartifacts/`
+> are gitignored. The tracking DB and model artifacts are reproducible by re-running
+> `train.py`, so they're not committed to git.
+
+**4. Serving (Phase 3)**
+```bash
+uv add fastapi uvicorn
+```
+
+Serve the live `@champion` model as a real-time API. It loads the model (via the
+flavor-agnostic `mlflow.pyfunc` interface) plus the fitted transform params
+persisted on its run, so raw admission records are featurised with the exact same
+`features.transform` used in training (no training-serving skew):
+```bash
+uv run uvicorn los_pred.app:app --reload --port 8000
+```
+
+- **Interactive docs / try it out:** http://127.0.0.1:8000/docs
+- **Endpoints:** `POST /predict` (raw admission JSON → predicted LOS days),
+  `GET /health` (serving model version), `GET /metrics` (prediction volume).
+
+Example request:
+```bash
+curl -X POST http://127.0.0.1:8000/predict -H 'content-type: application/json' \
+  -d '{"rcount":"1","gender":"M","facid":"B","hematocrit":12.0,"neutrophils":9.0,"sodium":138.0,"glucose":100.0,"bloodureanitro":12.0,"creatinine":1.0,"bmi":29.0,"pulse":70,"dialysisrenalendstage":0,"asthma":0,"irondef":1,"pneum":0,"substancedependence":0,"psychologicaldisordermajor":0,"depress":0,"psychother":0,"fibrosisandother":0,"malnutrition":0,"hemo":0}'
+# -> {"predicted_los_days": 4.09}
+```
+
+**5. Tests**
+```bash
+uv add --dev httpx        # for the FastAPI TestClient (serving tests)
+uv run pytest -q          # feature + training + serving pipelines
+```

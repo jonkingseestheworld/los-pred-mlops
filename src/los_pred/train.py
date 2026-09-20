@@ -93,13 +93,28 @@ BASELINE_MAE = 1.914  # predict-the-mean floor from notebooks/01_eda.ipynb
 
 def load_and_prepare(cutoff: str = DEFAULT_CUTOFF):
     """Load raw data, temporal-split, fit the transform on TRAIN only, and
-    return (X_train, y_train, X_test, y_test)."""
+    return (X_train, y_train, X_test, y_test, params).
+
+    `params` is the fitted transform state (facid vocab, glucose median, caps).
+    It's returned so the training run can persist it — serving needs the exact
+    same params to transform raw records identically (no training-serving skew)."""
     raw = add_batch_month(pd.read_csv(DATA_CSV))
     train_df, test_df = temporal_split(raw, cutoff=cutoff)
     params = fit_transformer(train_df)
     X_train, y_train = transform(train_df, params), train_df[TARGET]
     X_test, y_test = transform(test_df, params), test_df[TARGET]
-    return X_train, y_train, X_test, y_test
+    return X_train, y_train, X_test, y_test, params
+
+
+def jsonable_params(params: dict) -> dict:
+    """Cast the fitted transform params to plain JSON types (numpy -> float/str)
+    so they can be logged as an MLflow artifact and reloaded at serving time."""
+    return {
+        "facid_categories": [str(c) for c in params["facid_categories"]],
+        "glucose_median": float(params["glucose_median"]),
+        "neutrophils_cap": float(params["neutrophils_cap"]),
+        "bloodureanitro_cap": float(params["bloodureanitro_cap"]),
+    }
 
 
 def train_variant(config: dict, X_train, y_train) -> LGBMRegressor:
@@ -135,7 +150,8 @@ def main() -> None:
     mlflow.set_tracking_uri(TRACKING_URI)
     mlflow.set_experiment(EXPERIMENT)
 
-    X_train, y_train, X_test, y_test = load_and_prepare()
+    X_train, y_train, X_test, y_test, params = load_and_prepare()
+    params_json = jsonable_params(params)   # fitted transform state, shipped with every run
 
     results = []
     for name, config in VARIANTS.items():
@@ -154,6 +170,9 @@ def main() -> None:
             mlflow.log_metrics({**metrics, "baseline_mae": BASELINE_MAE})
             mlflow.lightgbm.log_model(model, name="model", input_example=X_train.head(3))
             #mlflow.sklearn.log_model(model, name="model") #, input_example=X_train.head(3))
+            # Persist the fitted transform params alongside the model so serving
+            # can rebuild features identically (no training-serving skew).
+            mlflow.log_dict(params_json, "transform_params.json")
 
             results.append({"variant": name, "run_id": run.info.run_id, **metrics})
 

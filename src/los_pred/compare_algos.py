@@ -88,7 +88,7 @@ def run(treatment: str) -> None:
     mlflow.set_tracking_uri(TRACKING_URI)
     mlflow.set_experiment(EXPERIMENT)
 
-    X_train, y_train, X_test, y_test = load_and_prepare()
+    X_train, y_train, X_test, y_test, _ = load_and_prepare()  # params unused here
     y_fit = np.log1p(y_train) if log_target else y_train
 
     results = []

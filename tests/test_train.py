@@ -91,7 +91,10 @@ def test_variant_trains_and_evaluates(name, config, synthetic_split):
 def test_load_and_prepare_no_row_overlap():
     from los_pred.train import load_and_prepare
 
-    X_train, y_train, X_test, y_test = load_and_prepare()
+    X_train, y_train, X_test, y_test, params = load_and_prepare()
     assert len(X_train) > 0 and len(X_test) > 0
+    assert set(params) == {                                     # params returned for serving
+        "facid_categories", "glucose_median", "neutrophils_cap", "bloodureanitro_cap",
+    }
     assert list(X_train.columns) == list(X_test.columns)      # identical schema
     assert set(X_train.index).isdisjoint(X_test.index)         # no shared rows
