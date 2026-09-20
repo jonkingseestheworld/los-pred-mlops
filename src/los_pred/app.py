@@ -36,7 +36,10 @@ Example:
 
 from __future__ import annotations
 
+import json
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import mlflow
 import mlflow.pyfunc
@@ -50,6 +53,10 @@ from los_pred.features import transform
 from los_pred.train import REGISTERED_MODEL, TRACKING_URI
 
 ALIAS = "champion"
+# Deployment: point at a self-contained bundle (from los_pred.export_model) to
+# serve without an MLflow tracking DB. Unset -> resolve the live @champion from
+# the registry (local dev). Set by the Docker image.
+LOCAL_MODEL_DIR = os.getenv("LOS_MODEL_DIR")
 
 
 # --- input contract -------------------------------------------------------
@@ -112,11 +119,26 @@ def predict_days(record: dict, model, params: dict, log_target: bool) -> float:
 
 # --- artifact loading -----------------------------------------------------
 def load_artifacts(alias: str = ALIAS) -> dict:
-    """Load the aliased model (pyfunc), its fitted transform params, and log_target.
+    """Load model (pyfunc) + fitted transform params + log_target.
 
-    All three come from the SAME model version's run, so they're guaranteed to
-    match — this is what prevents training-serving skew.
+    Model, params, and log_target always come from the SAME model version, so
+    they can't drift apart — this is what prevents training-serving skew.
+
+    Two modes:
+    - **Baked bundle** (deployment) — if LOS_MODEL_DIR is set, load a
+      self-contained folder produced by `los_pred.export_model`. No MLflow
+      tracking DB needed (the local sqlite registry stores absolute artifact
+      paths that don't exist inside a container).
+    - **Registry** (local dev) — resolve the live `@alias` version from MLflow.
     """
+    if LOCAL_MODEL_DIR:
+        d = Path(LOCAL_MODEL_DIR)
+        meta = json.loads((d / "metadata.json").read_text())
+        params = json.loads((d / "transform_params.json").read_text())
+        model = mlflow.pyfunc.load_model(str(d / "model"))
+        return {"model": model, "params": params,
+                "log_target": bool(meta["log_target"]), "version": meta["version"]}
+
     mlflow.set_tracking_uri(TRACKING_URI)
     client = MlflowClient()
     mv = client.get_model_version_by_alias(REGISTERED_MODEL, alias)
