@@ -231,3 +231,5 @@ mlartifacts/
 
 # Exported serving bundle (Phase 4) — reproducible via `uv run python -m los_pred.export_model`
 serving_model/
+
+monitoring/reports/
