@@ -43,6 +43,7 @@ from __future__ import annotations
 import argparse
 
 import mlflow
+import mlflow.pyfunc
 from mlflow import MlflowClient
 
 from los_pred.train import REGISTERED_MODEL, TRACKING_URI
@@ -59,6 +60,23 @@ ALIASES = list(LIFECYCLE.values())
 def _client() -> MlflowClient:
     mlflow.set_tracking_uri(TRACKING_URI)
     return MlflowClient()
+
+
+def load_champion(alias: str = "champion", name: str = REGISTERED_MODEL) -> dict:
+    """Load the live model behind `@alias` from the registry.
+
+    Returns {model (pyfunc), params (fitted transform state), log_target, version}
+    — all from the SAME model version, so they can't drift apart. Shared by the
+    serving app and the monitor so both operate on the exact model you serve.
+    """
+    client = _client()
+    mv = client.get_model_version_by_alias(name, alias)
+    run = client.get_run(mv.run_id)
+    params = mlflow.artifacts.load_dict(f"runs:/{mv.run_id}/transform_params.json")
+    log_target = run.data.params.get("log_target", "False") == "True"
+    model = mlflow.pyfunc.load_model(f"models:/{name}@{alias}")
+    return {"model": model, "params": params, "log_target": log_target,
+            "version": mv.version}
 
 
 def show(name: str = REGISTERED_MODEL) -> None:

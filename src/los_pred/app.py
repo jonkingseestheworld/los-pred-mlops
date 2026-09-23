@@ -41,16 +41,15 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-import mlflow
 import mlflow.pyfunc
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI
-from mlflow import MlflowClient
 from pydantic import BaseModel, Field
 
 from los_pred.features import transform
-from los_pred.train import REGISTERED_MODEL, TRACKING_URI
+from los_pred.registry import load_champion
+from los_pred.train import REGISTERED_MODEL
 
 ALIAS = "champion"
 # Deployment: point at a self-contained bundle (from los_pred.export_model) to
@@ -129,7 +128,8 @@ def load_artifacts(alias: str = ALIAS) -> dict:
       self-contained folder produced by `los_pred.export_model`. No MLflow
       tracking DB needed (the local sqlite registry stores absolute artifact
       paths that don't exist inside a container).
-    - **Registry** (local dev) — resolve the live `@alias` version from MLflow.
+    - **Registry** (local dev) — resolve the live `@alias` version from MLflow
+      (shared loader `los_pred.registry.load_champion`).
     """
     if LOCAL_MODEL_DIR:
         d = Path(LOCAL_MODEL_DIR)
@@ -139,15 +139,7 @@ def load_artifacts(alias: str = ALIAS) -> dict:
         return {"model": model, "params": params,
                 "log_target": bool(meta["log_target"]), "version": meta["version"]}
 
-    mlflow.set_tracking_uri(TRACKING_URI)
-    client = MlflowClient()
-    mv = client.get_model_version_by_alias(REGISTERED_MODEL, alias)
-    run = client.get_run(mv.run_id)
-    params = mlflow.artifacts.load_dict(f"runs:/{mv.run_id}/transform_params.json")
-    log_target = run.data.params.get("log_target", "False") == "True"
-    model = mlflow.pyfunc.load_model(f"models:/{REGISTERED_MODEL}@{alias}")
-    return {"model": model, "params": params, "log_target": log_target,
-            "version": mv.version}
+    return load_champion(alias)
 
 
 # --- app ------------------------------------------------------------------

@@ -8,9 +8,8 @@ training reference.
 Separation of concerns:
 - `features.py` builds the feature matrix (shared with training + serving).
 - `monitor.py` (here) turns a model + data into monitoring reports.
-- Model *training* belongs in `train.py` (Phase 2). `main()` trains a simple
-  stand-in baseline so this module is runnable today; once Phase 2 registers a
-  real model, load that here instead of training one.
+- `main()` loads the live `@champion` model (via `los_pred.registry.load_champion`)
+  so monitoring describes the exact model you serve — not a stand-in.
 
 Run:
     uv run python -m los_pred.monitor
@@ -25,15 +24,10 @@ import pandas as pd
 from evidently import Dataset, DataDefinition, Regression, Report
 from evidently.presets import DataDriftPreset, RegressionPreset
 
-from lightgbm import LGBMRegressor
-
-
 from los_pred.features import (
     FLAGS,
     TARGET,
     add_batch_month,
-    fit_transformer,
-    temporal_split,
     transform,
 )
 
@@ -84,9 +78,14 @@ def generate_reports(
     params: dict,
     cutoff: str = DEFAULT_CUTOFF,
     out_dir: Path = REPORTS_DIR,
+    log_target: bool = False,
 ) -> list[Path]:
     """For each month after `cutoff`, write a drift report and a performance
-    report vs the training reference. Returns the list of written paths."""
+    report vs the training reference. Returns the list of written paths.
+
+    Predictions are returned to real days (invert log1p if the model used it,
+    then floor-clip at 1) so the performance report matches how the model serves.
+    """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cut = pd.Period(cutoff, freq="M")
@@ -94,7 +93,10 @@ def generate_reports(
     df = raw_df if "batch_month" in raw_df else add_batch_month(raw_df)
     X_all = transform(df, params)
     y_all = df[TARGET]
-    pred_all = pd.Series(np.clip(model.predict(X_all), 1, None), index=X_all.index)
+    raw_pred = model.predict(X_all)
+    if log_target:
+        raw_pred = np.expm1(raw_pred)
+    pred_all = pd.Series(np.clip(raw_pred, 1, None), index=X_all.index)
 
     ref_mask = df["batch_month"] <= cut
     schema = feature_schema(X_all)
@@ -114,22 +116,21 @@ def generate_reports(
 
 
 def main() -> None:
-    """Train a stand-in baseline and generate the monthly monitoring reports.
+    """Load the live @champion model and generate the monthly monitoring reports.
 
-    Placeholder model until Phase 2's train.py registers a real one — swap the
-    training block for loading the registered model when that exists.
+    Monitoring must describe the model you actually serve, so it loads the same
+    @champion (model + fitted params + log_target) that app.py serves, via the
+    shared loader in los_pred.registry.
     """
-    from lightgbm import LGBMRegressor
+    from los_pred.registry import load_champion
 
-    raw = add_batch_month(pd.read_csv(DATA_CSV))
-    train_df, _ = temporal_split(raw, cutoff=DEFAULT_CUTOFF)
-
-    params = fit_transformer(train_df)
-    model = LGBMRegressor(random_state=0)
-    model.fit(transform(train_df, params), train_df[TARGET])
-
-    paths = generate_reports(raw, model, params)
-    print(f"wrote {len(paths)} reports to {REPORTS_DIR}:")
+    art = load_champion()
+    raw = pd.read_csv(DATA_CSV)
+    paths = generate_reports(
+        raw, art["model"], art["params"], log_target=art["log_target"],
+    )
+    print(f"monitoring @champion v{art['version']} — "
+          f"wrote {len(paths)} reports to {REPORTS_DIR}:")
     for p in paths:
         print(" ", p.name)
 
