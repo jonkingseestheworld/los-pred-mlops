@@ -143,7 +143,7 @@ curl -X POST http://127.0.0.1:8000/predict -H 'content-type: application/json' \
 # -> {"predicted_los_days": 4.09}
 ```
 
-**5. Containerised deployment (Phase 4)**
+**5. Containerised deployment (Phase 3)**
 
 Package the API as a Docker image that ships an **immutable copy of the model**,
 so it runs anywhere with only Docker installed — no local Python, uv, or MLflow.
@@ -203,7 +203,39 @@ Reports are written to `monitoring/reports/` (`drift_<month>.html`,
 `notebooks/03_monitoring.ipynb` for the naive baseline (the "error to beat") and
 interactive drift exploration.
 
-**7. Tests**
+**7. Explainability (Phase 5)**
+
+```bash
+uv add --dev shap
+```
+
+Explain _why_ the model predicts what it does, with SHAP on the `@champion` model
+(`notebooks/05_explainability.ipynb`):
+
+- **Global** — `shap.TreeExplainer` on the native LightGBM model; a beeswarm and a
+  mean-|SHAP| bar rank the drivers of length of stay.
+- **Local** — a waterfall decomposes one patient's prediction into per-feature
+  contributions.
+- **The ceiling** — SHAP on long-stay (LOS ≥ 10) patients, to investigate _why_
+  the model under-predicts the tail (the limitation found in `04_posthoc_analysis`).
+
+```bash
+jupyter notebook notebooks/05_explainability.ipynb
+```
+
+> **Note — SHAP values are in log-space.** The champion trains on `log1p(LOS)`, so
+> SHAP explains the _log-day_ output. Direction and ranking are interpretable;
+> magnitudes are log-space (a SHAP of `+0.3` is not "+0.3 days").
+
+**Headline finding.** The dominant drivers are `rcount` (readmission count) and
+`comorbidity_count` — both push predictions up, as clinical intuition expects.
+The model _does_ recognise long-stay patients (`rcount`'s mean SHAP is ~0 across
+all patients but **+0.42** for the long-stay subset); it under-predicts the tail
+not because it ignores the signal but because the scarce, LOS-17-capped training
+tail leaves it unable to calibrate the magnitude — a **data** limitation, not a
+model flaw.
+
+**8. Tests**
 
 ```bash
 uv add --dev httpx        # for the FastAPI TestClient (serving tests)
