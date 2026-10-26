@@ -140,3 +140,14 @@ def test_unknown_facility_routes_to_other(fitted):
     known_fac_cols = [c for c in X_test.columns if c.startswith("fac_") and c != "fac_other"]
     assert X_test.loc[z_idx, "fac_other"] == 1
     assert X_test.loc[z_idx, known_fac_cols].sum() == 0
+
+
+# --- transform: input dtype robustness -----------------------------------
+def test_integer_valued_labs_give_identical_features(fitted):
+    """JSON clients may send 100.0 as 100 (int). The features must not depend on
+    that: transform must neither raise nor change the result."""
+    train_df, _, params = fitted
+    as_int = train_df.copy()
+    as_int[features.FLOAT_COLS] = as_int[features.FLOAT_COLS].astype("int64")  # fixture values are whole numbers
+
+    pd.testing.assert_frame_equal(transform(train_df, params), transform(as_int, params))

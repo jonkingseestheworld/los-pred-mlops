@@ -233,3 +233,6 @@ mlartifacts/
 serving_model/
 
 monitoring/reports/
+
+# Azure ML deployment code folder (Phase 4) — rebuilt by `bash azure/package_code.sh`
+azure/code/

@@ -27,6 +27,15 @@ FLAGS = [
 
 TARGET = "lengthofstay"
 
+# Continuous lab/vital columns the model was trained on as float64. Normalised to
+# float in `transform` because JSON clients (e.g. a browser) often send 100.0 as
+# 100, so the column arrives as int64 and pandas 3 then refuses to assign the
+# float train median / caps into it.
+FLOAT_COLS = [
+    "hematocrit", "neutrophils", "sodium", "glucose",
+    "bloodureanitro", "creatinine", "bmi",
+]
+
 # Columns removed from the feature matrix: identifiers, leakage (dates),
 # replaced-by-encoding (gender/facid), near-constant (respiration), a ~0-signal
 # count (secondarydiagnosisnonicd9), the batch label, and the target itself.
@@ -79,6 +88,7 @@ def fit_transformer(train: pd.DataFrame) -> dict:
 def transform(frame: pd.DataFrame, p: dict) -> pd.DataFrame:
     """Apply the fitted transform. Pure: returns the feature matrix X (no target)."""
     out = frame.copy()
+    out[FLOAT_COLS] = out[FLOAT_COLS].astype(float)   # input dtype must not matter
 
     # --- stateless encodings / engineered features ---
     out["isMale"] = (out["gender"] == "M").astype(int)

@@ -42,12 +42,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import mlflow.pyfunc
-import numpy as np
-import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from los_pred.features import transform
+from los_pred.predict import predict_days
 from los_pred.registry import load_champion
 from los_pred.train import REGISTERED_MODEL
 
@@ -105,15 +103,8 @@ class Admission(BaseModel):
 
 
 
-# --- prediction core (pure, unit-testable without HTTP) -------------------
-def predict_days(record: dict, model, params: dict, log_target: bool) -> float:
-    """raw record -> transform(params) -> model -> invert log1p -> clip >=1 -> days."""
-    X = transform(pd.DataFrame([record]), params)
-    pred = np.asarray(model.predict(X), dtype=float)
-    if log_target:
-        pred = np.expm1(pred)
-    pred = np.clip(pred, 1, None)
-    return float(pred[0])
+# The prediction core (`predict_days`) lives in los_pred.predict, shared with the
+# Azure ML scoring script so every serving surface uses one implementation.
 
 
 # --- artifact loading -----------------------------------------------------
