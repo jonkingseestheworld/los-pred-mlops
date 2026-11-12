@@ -1,0 +1,18 @@
+# Register the model bundle in the Azure ML registry (CLI pass).
+#   az ml model create --file azure/cli/model.yml
+#
+# `path` is the exported serving_model/ folder (model + transform_params.json +
+# metadata.json); relative to THIS file. Type is custom_model, not mlflow_model:
+# the MLmodel file is nested inside serving_model/model/, and score.py loads it.
+$schema: https://azuremlschemas.azureedge.net/latest/model.schema.json
+name: los-pred-model
+path: ../../serving_model
+type: custom_model
+description: LOS LightGBM log1p champion bundle (model + transform params + metadata)
+tags:
+  source: mlflow-los-pred-los
+  mlflow_version: "4"
+  algorithm: lightgbm
+  target_treatment: log1p
+  project: los-pred-mlops
+  registered_via: cli

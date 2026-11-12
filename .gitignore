@@ -223,3 +223,16 @@ data/*
 
 .vscode/*
 !.vscode/settings.json
+
+# MLflow local tracking (Phase 2) — DB + model artifacts, not for git
+mlflow.db
+mlruns/
+mlartifacts/
+
+# Exported serving bundle (Phase 4) — reproducible via `uv run python -m los_pred.export_model`
+serving_model/
+
+monitoring/reports/
+
+# Azure ML deployment code folder (Phase 4) — rebuilt by `bash azure/package_code.sh`
+azure/code/

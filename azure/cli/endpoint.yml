@@ -1,0 +1,9 @@
+# Managed online endpoint — the stable URL + keys (CLI pass).
+#   az ml online-endpoint create --file azure/cli/endpoint.yml
+#
+# Name must be unique within the region and different from the portal pass's
+# `los-pred-portal`. The endpoint has no VM of its own: compute is billed once a
+# deployment (deployment.yml) exists.
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineEndpoint.schema.json
+name: los-pred-cli
+auth_mode: key

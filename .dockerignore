@@ -1,0 +1,19 @@
+# Keep the build context (and image) small. serving_model/ is intentionally NOT
+# ignored — it's the baked model the image needs.
+.venv/
+mlruns/
+mlflow.db
+mlartifacts/
+data/
+notebooks/
+tests/
+monitoring/
+docs/
+.git/
+.gitignore
+.pytest_cache/
+.ruff_cache/
+**/__pycache__/
+*.pyc
+.DS_Store
+.claude/

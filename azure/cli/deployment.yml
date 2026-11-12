@@ -1,0 +1,18 @@
+# Managed online deployment — the VM running score.py (CLI pass).
+#   az ml online-deployment create --file azure/cli/deployment.yml --all-traffic
+#
+# BILLS HOURLY once created (Standard_D2as_v4 ~ $0.11/hr). Delete when done.
+#
+# `code` is the FLAT folder built by `bash azure/package_code.sh` (score.py +
+# features.py + predict.py); relative to THIS file.
+$schema: https://azuremlschemas.azureedge.net/latest/managedOnlineDeployment.schema.json
+name: blue
+endpoint_name: los-pred-cli
+model: azureml:los-pred-model@latest
+environment: azureml:los-pred-scoring-env@latest
+code_configuration:
+  code: ../code
+  scoring_script: score.py
+instance_type: Standard_D2as_v4
+instance_count: 1
+app_insights_enabled: true   # request logging / latency / errors -> Application Insights

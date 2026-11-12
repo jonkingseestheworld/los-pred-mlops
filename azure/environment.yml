@@ -1,0 +1,24 @@
+# Conda environment for the LOS Azure ML endpoint (the "environment spec" step).
+#
+# Versions are pinned to exactly what the model was trained/exported with
+# (see uv.lock) — a mismatched lightgbm/skops/pandas is the classic way a model
+# loads fine locally and misbehaves in the cloud. Mirrors the Docker serving set
+# (no jupyter/shap/evidently/fastapi — not needed to score).
+#
+# azureml-inference-server-http is the HTTP server Azure ML runs score.py inside;
+# a custom conda environment must include it.
+name: los-pred-scoring
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+      - azureml-inference-server-http
+      - mlflow==3.16.0
+      - lightgbm==4.7.0
+      - scikit-learn==1.9.0
+      - pandas==3.0.5
+      - numpy==2.3.5
+      - scipy==1.18.1
+      - skops==0.14.0
