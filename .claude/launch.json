@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "los-dashboard",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "--group", "dashboard", "shiny", "run", "--port", "8765", "db_app/app.py"],
+      "port": 8765
+    }
+  ]
+}

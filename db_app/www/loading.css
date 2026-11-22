@@ -1,0 +1,76 @@
+.app-loading {
+  --nav-blue: #001a64;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 2rem;
+  background: var(--nav-blue);
+  color: #fff;
+  text-align: center;
+  transition: opacity 0.4s ease;
+}
+.app-loading--hidden { opacity: 0; pointer-events: none; }
+
+.app-loading__title {
+  max-width: 14em;
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.25;
+}
+.app-loading__rule {
+  width: min(42vw, 420px);
+  height: 1px;
+  background: rgba(255, 255, 255, 0.28);
+}
+.app-loading__brand { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; }
+.app-loading__logo {
+  padding: 0.9rem 2.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 2rem;
+  font-weight: 650;
+  letter-spacing: 0.25em;
+  text-indent: 0.25em;   /* re-centres the letter-spaced text */
+}
+.app-loading__img { flex-shrink: 0; height: 110px; width: auto; border-radius: 8px;   margin: 1rem ; }
+.app-loading__org {
+  font-size: 0.95rem;
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+.app-loading__team {
+  padding: 0.7rem 2rem;
+  /* border: 1px solid rgba(255, 255, 255, 0.3); */
+  border-radius: 8px;
+  /* background: rgba(255, 255, 255, 0.08); */
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  /* text-transform: uppercase; */
+  color: rgba(255, 255, 255, 0.85);
+}
+.app-loading__spinner {
+  flex-shrink: 0;   /* stay a circle even when the screen is too short for the content */
+  width: 64px;
+  height: 64px;
+  margin-top: 1rem;
+  border: 6px solid rgba(255, 255, 255, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  animation: app-loading-spin 1s linear infinite;
+}
+.app-loading__message { margin: 0; font-size: 1.1rem; color: rgba(255, 255, 255, 0.55); }
+
+@keyframes app-loading-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .app-loading__spinner { animation-duration: 3s; }
+}

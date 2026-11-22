@@ -75,13 +75,21 @@ The best variant is registered in the local MLflow Model Registry as `los-pred-l
 uv run python -m los_pred.train
 ```
 
-Compare algorithms (LightGBM vs XGBoost) on a fixed target treatment. Logged to a
-separate `los-pred-algo` experiment; prints a winner but does not register:
+Compare algorithms (LightGBM, XGBoost, plus linear and ridge regression as simple
+baselines) on a fixed target treatment. Logged to a separate `los-pred-algo`
+experiment; prints a winner but does not register. A copy of the latest table is
+written to `docs/algo_comparison.json`:
 
 ```bash
 uv run python -m los_pred.compare_algos                 # default: log1p
 uv run python -m los_pred.compare_algos --treatment l2
 ```
+
+> **Note — scaling for linear baselines only.** All algorithms share the same features
+> from `features.transform()`. The linear/ridge models add a `StandardScaler` (inside a
+> sklearn `Pipeline`, so it is fit on train only): their coefficients and ridge's penalty
+> are scale-sensitive. LightGBM/XGBoost split on thresholds, so rescaling doesn't change
+> them and no scaler is used. `poisson` is skipped for linear models.
 
 Inspect runs, metrics, and registered models in the MLflow UI:
 
@@ -235,13 +243,22 @@ not because it ignores the signal but because the scarce, LOS-17-capped training
 tail leaves it unable to calibrate the magnitude — a **data** limitation, not a
 model flaw.
 
-**8. Tests**
+**8. Dashboard (Shiny for Python)**
+
+A standalone demo app in [`db_app/`](db_app/README.md): loading page, Description,
+Group summary (Table-1 style descriptives) and a Forecaster placeholder.
+
+```bash
+uv run --group dashboard shiny run --reload db_app/app.py
+```
+
+**9. Tests**
 
 ```bash
 uv add --dev httpx        # for the FastAPI TestClient (serving tests)
 # --dev Add it as a dev dependency (testing, development only)
 
-uv run pytest -q          # feature + training + serving pipelines
+uv run pytest -q          # feature + training + serving + dashboard-summary tests
 ```
 
 ## Code quality & conventions

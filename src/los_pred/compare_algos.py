@@ -1,4 +1,4 @@
-"""Phase 2 (step 2) — algorithm comparison: LightGBM vs XGBoost.
+"""Phase 2 (step 2) — algorithm comparison: LightGBM vs XGBoost vs linear baselines.
 
 PLAN SUMMARY
 ============
@@ -10,6 +10,21 @@ Controlled-experiment rule: same features, same temporal split, same target
 treatment, same shared hyperparameters (n_estimators, learning_rate, seed).
 Only the algorithm changes. Pass --treatment to hold a different treatment fixed;
 it defaults to `log1p`, the winner from train.py.
+
+Linear baselines (linear, ridge): added to answer "do we need boosted trees at all?".
+They use the SAME features from features.transform() (already numeric, no NaNs),
+with one extra step — feature SCALING (StandardScaler, inside a Pipeline):
+  - Linear models are scale-sensitive: ridge's penalty shrinks all coefficients
+    equally, so unscaled features (e.g. glucose in the 100s vs 0/1 flags) would be
+    penalised unevenly; scaling also keeps the solver well-conditioned and makes
+    coefficients comparable. OLS predictions are unchanged by scaling, but we scale
+    both for a like-for-like pair.
+  - Tree models (LightGBM/XGBoost) split on thresholds, so monotonic rescaling
+    does not change their splits -> no scaler needed.
+  - The scaler lives in the Pipeline, so it is fit on TRAIN only (no test leakage)
+    and ships inside the logged model.
+The `poisson` treatment is skipped for linear models (no Poisson objective here;
+it would silently be plain OLS on raw LOS, duplicating `l2`).
 
 Honest caveat: tree-complexity isn't perfectly comparable across the two APIs —
 LightGBM is leaf-wise (num_leaves), XGBoost is depth-wise (max_depth). We use
@@ -34,23 +49,31 @@ View UI:                  uv run mlflow ui --backend-store-uri sqlite:///mlflow.
 from __future__ import annotations
 
 import argparse
+import json
+from datetime import datetime, timezone
 
 import mlflow
 import mlflow.lightgbm
+import mlflow.sklearn
 import mlflow.xgboost
 import numpy as np
 import pandas as pd
 from lightgbm import LGBMRegressor
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from xgboost import XGBRegressor
 
 from los_pred.train import (
     BASELINE_MAE,
+    PROJECT_ROOT,
     TRACKING_URI,
     evaluate,
     load_and_prepare,
 )
 
 EXPERIMENT = "los-pred-algo"
+RESULTS_JSON = PROJECT_ROOT / "docs" / "algo_comparison.json"   # quick-reference copy of the MLflow metrics
 
 # Target treatment -> per-algorithm objective + whether to log1p the target.
 # (Same three treatments as train.py, expressed for both learners.)
@@ -72,15 +95,44 @@ def build_xgb(objective: str) -> XGBRegressor:
     return XGBRegressor(objective=objective, max_depth=6, verbosity=0, **COMMON)
 
 
-# name -> (builder, key into TREATMENTS for its objective, native log_model fn)
+def build_linear(_objective=None):
+    # Scaling is REQUIRED for the linear family (see module docstring); trees skip it.
+    return make_pipeline(StandardScaler(), LinearRegression())
+
+
+def build_ridge(_objective=None):
+    return make_pipeline(StandardScaler(), Ridge(alpha=1.0, random_state=0))
+
+
+# name -> (builder, key into TREATMENTS for its objective or None, native log_model fn)
+# obj_key None = linear baseline: no objective, squared-error fit (log1p/raw per treatment).
 ALGOS = {
-    "lightgbm": (build_lgb, "lgb_objective", mlflow.lightgbm.log_model),
-    "xgboost":  (build_xgb, "xgb_objective", mlflow.xgboost.log_model),
+    "lightgbm": (build_lgb,    "lgb_objective", mlflow.lightgbm.log_model),
+    "xgboost":  (build_xgb,    "xgb_objective", mlflow.xgboost.log_model),
+    "linear":   (build_linear, None,            mlflow.sklearn.log_model),
+    "ridge":    (build_ridge,  None,            mlflow.sklearn.log_model),
 }
 
 
+def save_results(table: pd.DataFrame, treatment: str) -> None:
+    """Write the comparison table to docs/algo_comparison.json for quick reference.
+
+    Overwritten each run (latest comparison only); MLflow keeps the full history.
+    """
+    payload = {
+        "experiment": EXPERIMENT,
+        "run_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "treatment": treatment,
+        "baseline_mae": BASELINE_MAE,
+        "results": table.round(4).to_dict(orient="records"),   # sorted best (lowest MAE) first
+    }
+    RESULTS_JSON.parent.mkdir(parents=True, exist_ok=True)
+    RESULTS_JSON.write_text(json.dumps(payload, indent=2) + "\n")
+    print(f"saved comparison -> {RESULTS_JSON}")
+
+
 def run(treatment: str) -> None:
-    """Train LightGBM and XGBoost on the fixed `treatment`, log both, print a table."""
+    """Train every algo in ALGOS on the fixed `treatment`, log each, print a table."""
     spec = TREATMENTS[treatment]
     log_target = spec["log_target"]
     eval_config = {"log_target": log_target}   # evaluate() only reads this key
@@ -93,15 +145,20 @@ def run(treatment: str) -> None:
 
     results = []
     for algo, (build, obj_key, log_model) in ALGOS.items():
+        if obj_key is None and treatment == "poisson":
+            print(f"skipping {algo}: no Poisson objective for linear baselines")
+            continue
+        objective = spec[obj_key] if obj_key else "squared_error"
         with mlflow.start_run(run_name=f"{algo}-{treatment}") as run_ctx:
-            model = build(spec[obj_key])
+            model = build(objective)
             model.fit(X_train, y_fit)
             metrics = evaluate(model, eval_config, X_test, y_test)
 
             mlflow.log_params({
                 "algo": algo,
                 "treatment": treatment,
-                "objective": spec[obj_key],
+                "objective": objective,
+                "scaled_features": obj_key is None,
                 "log_target": log_target,
                 "n_features": X_train.shape[1],
                 **COMMON,
@@ -117,6 +174,8 @@ def run(treatment: str) -> None:
     print(table.to_string(index=False))
     print(f"naive baseline MAE = {BASELINE_MAE}")
 
+    save_results(table, treatment)
+
     winner = table.iloc[0]
     print(f"\nbest algo: {winner['algo']} (MAE {winner['mae']:.3f}) "
           f"— not registered (comparison only; train.py owns the registry)")
@@ -124,7 +183,7 @@ def run(treatment: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Compare LightGBM vs XGBoost on one fixed target treatment.",
+        description="Compare LightGBM, XGBoost and linear/ridge baselines on one fixed target treatment.",
     )
     parser.add_argument(
         "--treatment",

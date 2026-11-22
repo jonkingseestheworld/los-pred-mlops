@@ -1,0 +1,49 @@
+:root { --nav-blue: #001a64; --accent: #2c6e91; }
+
+.navbar { background-color: var(--nav-blue) !important; }
+.navbar .navbar-brand { font-weight: 700; letter-spacing: 0.01em; }
+.navbar-logo { height: 40px; width: auto; border-radius: 4px; display: block; }
+
+/* Overall app padding — applied to tab content */
+.tab-content { padding-top: 0rem; 
+             padding-bottom: 0rem;
+            padding-left: 2rem;
+            padding-right: 2rem; }
+
+/* breathing room between a sub-tab strip and its content */
+.nav-underline + .tab-content { padding-top: 1rem; }
+
+.page-intro { max-width: 80rem; }
+.page-intro p { color: #4a5568; }
+.placeholder-card { text-align: center; padding: 3rem 1rem; color: #4a5568; }
+.placeholder-card .badge { font-size: 0.85rem; }
+
+/* Disclaimer button styling */
+.disclaimer-btn {
+  color: #d32f2f ;
+  font-weight: 600 ;
+  font-size: 1.0rem ;
+  padding: 0.25rem 1rem ;
+}
+
+/* Disclaimer modal styling */
+.modal-title {
+  color: #d32f2f ;
+  text-align: center !important;
+  width: 100%;
+}
+
+.modal-footer {
+  justify-content: center !important;
+}
+
+/* Disclaimer box styling */
+.data_disclaimer {
+  color: #666;
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+}
+
+

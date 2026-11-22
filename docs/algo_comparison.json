@@ -1,0 +1,36 @@
+{
+  "experiment": "los-pred-algo",
+  "run_at_utc": "2026-11-21T07:40:28+00:00",
+  "treatment": "log1p",
+  "baseline_mae": 1.914,
+  "results": [
+    {
+      "algo": "lightgbm",
+      "run_id": "faa1010de7644c89abec61f090cd629a",
+      "mae": 0.3547,
+      "rmse": 0.5177,
+      "residual_mean": 0.0266
+    },
+    {
+      "algo": "xgboost",
+      "run_id": "5bb37b9d9e81493f8b65c5e3c8f50f87",
+      "mae": 0.365,
+      "rmse": 0.5165,
+      "residual_mean": 0.0259
+    },
+    {
+      "algo": "ridge",
+      "run_id": "a2f4d9c5766d478483d4dfffdd0d62d6",
+      "mae": 1.0346,
+      "rmse": 1.4616,
+      "residual_mean": 0.103
+    },
+    {
+      "algo": "linear",
+      "run_id": "b8182a58650341eaadeca8ff25ad0d69",
+      "mae": 1.0346,
+      "rmse": 1.4617,
+      "residual_mean": 0.103
+    }
+  ]
+}
