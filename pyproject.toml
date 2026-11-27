@@ -26,6 +26,21 @@ requires = ["uv_build>=0.11.19,<0.12.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
+# Slim, serving-only environment for the prediction API (used by Dockerfile.slim).
+# Installed on its own with `uv sync --only-group serving --no-install-project`,
+# so none of the [project] dependencies above (evidently, xgboost, full mlflow)
+# are pulled in. Versions are pinned to the ones the @champion model was trained
+# and saved with (see serving_model/model/requirements.txt) to avoid
+# training-serving skew. Bump them together when a new model is promoted.
+serving = [
+    "fastapi==0.141.1",
+    "uvicorn==0.52.4",
+    "mlflow-skinny==3.16.0",  # pyfunc/flavor loading only: no tracking server, UI or DB deps
+    "lightgbm==4.7.0",
+    "scikit-learn==1.9.0",
+    "pandas==3.0.5",
+    "skops==0.14.0",          # the model is serialised as model.skops
+]
 dashboard = [
     "shiny>=1.9.0",
 ]

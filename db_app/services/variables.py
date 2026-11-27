@@ -44,22 +44,31 @@ VARIABLES: list[Variable] = [
     Variable("fibrosisandother", "Fibrosis and other", "binary", "Fibrosis indicator"),
     Variable("malnutrition", "Malnutrition", "binary", "Malnutrition indicator"),
     Variable("hemo", "Hemo", "binary", "Hemo indicator"),
-    Variable("hematocrit", "Hematocrit", "continuous", "Hematocrit level", "%"),
-    Variable("neutrophils", "Neutrophils", "continuous", "White blood cell (neutrophil) count", "count"),
-    Variable("sodium", "Sodium", "continuous", "Sodium level", "mEq/L"),
-    Variable("glucose", "Glucose", "continuous", "Glucose level", "mg/dL"),
+    Variable("hematocrit", "Hematocrit", "continuous", "Hematocrit level", "g/dL"),
+    Variable("neutrophils", "Neutrophils", "continuous", "White blood cell (neutrophil) count", "cells/µL"),
+    Variable("sodium", "Sodium", "continuous", "Sodium level", "mmol/L"),
+    Variable("glucose", "Glucose", "continuous", "Glucose level", "mmol/L"),
     Variable("bloodureanitro", "Blood urea nitrogen", "continuous", "Blood urea nitrogen level", "mg/dL"),
     Variable("creatinine", "Creatinine", "continuous", "Creatinine level", "mg/dL"),
     Variable("bmi", "BMI", "continuous", "Body mass index", "kg/m²"),
     Variable("pulse", "Pulse", "continuous", "Pulse rate", "beats/min"),
-    Variable("respiration", "Respiration", "continuous", "Respiration rate"),
-    Variable("secondarydiagnosisnonicd9", "Secondary diagnoses", "continuous",
-             "Number of secondary (non-ICD-9) diagnoses", "count"),
+    Variable("respiration", "Respiration", "continuous", "Respiration rate", "breaths/min"),
+    #Variable("secondarydiagnosisnonicd9", "Secondary diagnoses", "continuous",
+    #         "Number of secondary (non-ICD-9) diagnoses", "count"),
     Variable("comorbidity_count", "Comorbidity count", "continuous",
              "Derived: sum of the 11 binary comorbidity flags", "count", "derived"),
 ]
 
 LABELS = {v.name: v.label for v in VARIABLES}
+
+
+def display_label(v: Variable) -> str:
+    """Label as shown in the summary tables: 'Glucose (mmol/L)'. A unit of 'count' is a
+    description of the quantity, not a unit, so those variables keep their plain label."""
+    return f"{v.label} ({v.unit})" if v.unit and v.unit != "count" else v.label
+
+
+DISPLAY_LABELS = {v.name: display_label(v) for v in VARIABLES}
 
 
 def dictionary_frame() -> pd.DataFrame:
@@ -83,9 +92,9 @@ def choices_of(*kinds: str) -> dict[str, str]:
 
 # Grouping options for the Group summary tab (value -> label).
 GROUP_BY_CHOICES = {
-    "none": "None (overall)",
-    "facid": "Facility",
-    "gender": "Gender",
-    "rcount": "Readmission count",
+    "none": "All entries",
+    #"facid": "Facility",
+    #"gender": "Gender",
+    #"rcount": "Readmission count",
     "split": "Train / test split",
 }

@@ -1,0 +1,73 @@
+By,Group,Variable,Level,n,pct
+none,Overall,Readmission count,0,55031,55.031
+none,Overall,Readmission count,1,15007,15.007
+none,Overall,Readmission count,2,9987,9.987
+none,Overall,Readmission count,3,8047,8.047
+none,Overall,Readmission count,4,6941,6.941
+none,Overall,Readmission count,5+,4987,4.987
+none,Overall,Gender,F,57643,57.643
+none,Overall,Gender,M,42357,42.357
+none,Overall,Facility,A,30035,30.035
+none,Overall,Facility,B,30012,30.012
+none,Overall,Facility,C,4699,4.699
+none,Overall,Facility,D,4499,4.499
+none,Overall,Facility,E,30755,30.755
+none,Overall,Dialysis / end-stage renal,Yes,3642,3.642
+none,Overall,Asthma,Yes,3527,3.527
+none,Overall,Iron deficiency,Yes,9494,9.494
+none,Overall,Pneumonia,Yes,3945,3.945
+none,Overall,Substance dependence,Yes,6306,6.306
+none,Overall,Major psychological disorder,Yes,23904,23.904
+none,Overall,Depression,Yes,5166,5.166
+none,Overall,Other psychological disorder,Yes,4939,4.939
+none,Overall,Fibrosis and other,Yes,479,0.479
+none,Overall,Malnutrition,Yes,4948,4.948
+none,Overall,Hemo,Yes,8000,8.0
+split,train,Readmission count,0,45752,55.09169506424073
+split,train,Readmission count,1,12385,14.913241899165532
+split,train,Readmission count,2,8261,9.947379194913724
+split,train,Readmission count,3,6705,8.073741375365756
+split,train,Readmission count,4,5771,6.949077028670512
+split,train,Readmission count,5+,4173,5.024865437643744
+split,train,Gender,F,47852,57.62038363818079
+split,train,Gender,M,35195,42.37961636181921
+split,train,Facility,A,25004,30.10825195371296
+split,train,Facility,B,24874,29.951714089611908
+split,train,Facility,C,3903,4.699748335280022
+split,train,Facility,D,3733,4.495044974532494
+split,train,Facility,E,25533,30.74524064686262
+split,train,Dialysis / end-stage renal,Yes,3017,3.63288258456055
+split,train,Asthma,Yes,2901,3.4932026442857658
+split,train,Iron deficiency,Yes,7895,9.506664900598457
+split,train,Pneumonia,Yes,3300,3.973653473334377
+split,train,Substance dependence,Yes,5215,6.279576625284477
+split,train,Major psychological disorder,Yes,19835,23.88406564957193
+split,train,Depression,Yes,4283,5.157320553421556
+split,train,Other psychological disorder,Yes,4120,4.961046154587161
+split,train,Fibrosis and other,Yes,397,0.47804255421628716
+split,train,Malnutrition,Yes,4128,4.970679253916457
+split,train,Hemo,Yes,6597,7.943694534420268
+split,test,Readmission count,0,9279,54.73367545567156
+split,test,Readmission count,1,2622,15.466289152362414
+split,test,Readmission count,2,1726,10.181088892821329
+split,test,Readmission count,3,1342,7.9160030673037225
+split,test,Readmission count,4,1170,6.90143337462396
+split,test,Readmission count,5+,814,4.801510057217012
+split,test,Gender,F,9791,57.75378988969504
+split,test,Gender,M,7162,42.24621011030496
+split,test,Facility,A,5031,29.67616351088303
+split,test,Facility,B,5138,30.307320238305905
+split,test,Facility,C,796,4.695334159145874
+split,test,Facility,D,766,4.518374329027311
+split,test,Facility,E,5222,30.80280776263788
+split,test,Dialysis / end-stage renal,Yes,625,3.686663127470064
+split,test,Asthma,Yes,626,3.6925617884740163
+split,test,Iron deficiency,Yes,1599,9.431958945319412
+split,test,Pneumonia,Yes,645,3.8046363475491063
+split,test,Substance dependence,Yes,1091,6.4354391553117445
+split,test,Major psychological disorder,Yes,4069,24.001651625081106
+split,test,Depression,Yes,883,5.208517666489707
+split,test,Other psychological disorder,Yes,819,4.831003362236772
+split,test,Fibrosis and other,Yes,82,0.48369020232407245
+split,test,Malnutrition,Yes,820,4.836902023240724
+split,test,Hemo,Yes,1403,8.2758213885448

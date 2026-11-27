@@ -1,4 +1,11 @@
-# Serving image for the LOS FastAPI app (Phase 4 — deploy).
+# FULL serving image for the LOS FastAPI app (Phase 4 — deploy).
+#
+# What it is: installs the WHOLE project environment (all [project] dependencies
+# in pyproject.toml: evidently, xgboost, full mlflow, ...), i.e. the same env
+# used for training and monitoring. Simple and guaranteed to match dev, but large
+# (~1.5–2 GB; xgboost alone pulls a ~250 MB NVIDIA CUDA library on Linux).
+# For hosting, prefer the slim image instead: see Dockerfile.slim (serving
+# deps only, same predictions).
 #
 # Ships an immutable model baked in at serving_model/, produced first by:
 #     uv run python -m los_pred.export_model

@@ -1,0 +1,10 @@
+{
+  "schema_version": 3,
+  "data_sha256": "6c688ccbadf1d74250047ad6d4160886055ccab5edf07d1e014c40f185b9ddcd",
+  "n_rows": 100000,
+  "first_visit": "2012-01-01",
+  "last_visit": "2013-01-01",
+  "split_cutoff": "2012-10",
+  "built_at": "2026-11-23T16:20:03+00:00",
+  "git_commit": "c6c491d"
+}

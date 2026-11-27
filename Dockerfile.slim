@@ -1,0 +1,52 @@
+# SLIM serving image for the LOS FastAPI app: the one to deploy/host.
+#
+# Compared with ./Dockerfile (the FULL image), this installs ONLY the
+# `serving` dependency group from pyproject.toml (fastapi, uvicorn, mlflow-skinny,
+# lightgbm, scikit-learn, pandas, skops). It leaves out evidently, xgboost
+# (+ its ~250 MB NVIDIA CUDA library on Linux) and the full mlflow server, which
+# are only needed for training/monitoring, not for answering /predict.
+# The los_pred package itself is not pip-installed (that would pull in the full
+# [project] dependencies); its source is put on PYTHONPATH instead.
+#
+# Same model, same code path, same predictions as the full image.
+#
+# Prereq (bakes the live @champion into serving_model/):
+#     uv run python -m los_pred.export_model
+# Build:  docker build -f Dockerfile.slim -t los-pred-api:slim .
+# Run:    docker run --rm -p 8000:8000 los-pred-api:slim
+# Then:   http://127.0.0.1:8000/docs
+
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+
+# LightGBM's runtime needs the OpenMP shared library (libgomp).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Run as a non-root user (uid 1000). Good practice, and what Hugging Face
+# Spaces expects. Switch to it BEFORE installing/copying and use COPY --chown,
+# so files are owned by `user` from the start. (A `RUN chown -R` afterwards
+# would write a second full copy of the venv into a new image layer.)
+RUN useradd -m -u 1000 user
+WORKDIR /app
+RUN chown user:user /app
+USER user
+
+# Install ONLY the serving group from the lockfile (no project, no dev groups).
+# Bytecode is compiled at build time so a cold start (e.g. a free-tier host
+# waking up) doesn't pay the compile cost. --no-cache keeps uv's download cache
+# out of the image.
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
+COPY --chown=user:user pyproject.toml uv.lock ./
+RUN uv sync --frozen --only-group serving --no-install-project --no-cache
+
+COPY --chown=user:user src ./src
+COPY --chown=user:user serving_model ./serving_model
+
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH=/app/src \
+    LOS_MODEL_DIR=/app/serving_model \
+    MLFLOW_DISABLE_AGENT_HINT=1
+
+EXPOSE 8000
+CMD ["uvicorn", "los_pred.app:app", "--host", "0.0.0.0", "--port", "8000"]

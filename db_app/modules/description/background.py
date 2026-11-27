@@ -66,15 +66,15 @@ def background_ui():
                             ui.card_header("About this dashboard"),
                             ui.p("The app contains three main tabs:"),
                             ui.tags.ol(
-                                ui.tags.li(ui.tags.b("Description"), " - background of the data and topic"),
+                                ui.tags.li(ui.tags.b("Description"), " - background and data processing details"),
                                 # add new line here
                                 ui.br(),
                                 ui.tags.li(
                                     ui.tags.b("Cohort summary"),
-                                    " — summary statistics for the patient cohort ",
+                                    " — summary statistics of the population cohort",
                                 ),
                                 ui.br(),
-                                ui.tags.li(ui.tags.b("Forecaster"), " - LoS predictions, based on a patient's characteristics."),
+                                ui.tags.li(ui.tags.b("Forecaster"), " - Length of Stay predictions (based on the patient's characteristics)"),
                             ),
 
                         ),
@@ -140,7 +140,7 @@ def background_server(input, output, session, data: pd.DataFrame):
     def _show_disclaimer():
         ui.modal_show(
             ui.modal(
-                ui.p("This is only a demo.Do not use anything here for makingclinical decisions."),
+                ui.p("This is only a demo.Do not use anything here for making clinical decisions."),
                 title="!!! WARNING !!!",
                 easy_close=True,
                 footer=ui.modal_button("Close"),

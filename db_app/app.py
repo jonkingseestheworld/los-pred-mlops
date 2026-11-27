@@ -20,7 +20,7 @@ from settings import APP_DIR, APP_TITLE, LOGO_SRC
 
 app_ui = ui.page_navbar(
     ui.nav_panel("Description", description_ui("description")),
-    ui.nav_panel("Group Summary", group_summary_ui("group_summary")),
+    ui.nav_panel("Cohort Summary", group_summary_ui("group_summary")),
     ui.nav_panel("Forecaster", forecaster_ui("forecaster")),
     ui.nav_spacer(),  # pushes everything after it to the right-hand side of the navbar
     ui.nav_control(ui.img(src=LOGO_SRC, alt="Length of stay logo", class_="navbar-logo")),
@@ -39,7 +39,7 @@ app_ui = ui.page_navbar(
 def server(input, output, session):
     data = load_dataset()  # read once per process, shared by every session
     description_server("description", data)
-    group_summary_server("group_summary", data)
+    group_summary_server("group_summary")
     forecaster_server("forecaster")
 
 

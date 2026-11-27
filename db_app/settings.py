@@ -16,6 +16,10 @@ PROJECT_ROOT = APP_DIR.parent
 # Raw Microsoft LOS data (gitignored — the Description tab says where to get it).
 DATA_CSV = Path(os.getenv("LOS_DATA_CSV", PROJECT_ROOT / "data" / "LengthOfStay.csv"))
 
+# Pre-computed Cohort Summary tables: aggregates only, committed with the app and
+# rebuilt by `db_app/build_summary.py`.
+SUMMARY_DIR = APP_DIR / "data"
+
 # Temporal split used at training time (train <= cutoff month, test = later).
 SPLIT_CUTOFF = "2012-10"
 

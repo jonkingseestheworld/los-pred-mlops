@@ -169,10 +169,26 @@ uv run python -m los_pred.export_model
 
 Build the image and run it (the app reads the baked bundle via `LOS_MODEL_DIR`):
 
+There are two Dockerfiles. Both serve the same model with the same code and give
+the same predictions; they differ in how much of the environment they install:
+
+| File | Installs | Image size | Use it for |
+|---|---|---|---|
+| `Dockerfile.slim` | only the `serving` dependency group (fastapi, uvicorn, mlflow-skinny, lightgbm, scikit-learn, pandas, skops) | small (~234 MB of Python packages) | **hosting** (Hugging Face Spaces, Azure Container Apps, etc.) |
+| `Dockerfile` | the full project env (adds evidently, xgboost + its CUDA library, full mlflow) | large (~1.5–2 GB) | matching the dev/training env exactly, debugging |
+
 ```bash
+# slim (recommended for deployment)
+docker build -f Dockerfile.slim -t los-pred-api:slim .
+docker run --rm -p 8000:8000 los-pred-api:slim
+
+# full
 docker build -t los-pred-api .
 docker run --rm -p 8000:8000 los-pred-api
 ```
+
+The `serving` group's versions are pinned to the ones the `@champion` model was
+saved with. Bump them together when you promote a model trained on newer libraries.
 
 Then use it exactly as in §4 — `http://127.0.0.1:8000/docs`, or the `curl` above.
 Stop with `Ctrl+C` (the `--rm` flag auto-removes the container).
@@ -246,9 +262,11 @@ model flaw.
 **8. Dashboard (Shiny for Python)**
 
 A standalone demo app in [`db_app/`](db_app/README.md): loading page, Description,
-Group summary (Table-1 style descriptives) and a Forecaster placeholder.
+Cohort Summary (Table-1 style descriptives, read from pre-computed, version-stamped
+tables) and a Forecaster placeholder.
 
 ```bash
+uv run --group dashboard python db_app/build_summary.py   # rebuild summary tables when the data changes
 uv run --group dashboard shiny run --reload db_app/app.py
 ```
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
+import pandas as pd
 from shiny import ui
 
 
@@ -16,6 +17,8 @@ def html_table(
     rows: Sequence[Sequence],
     *,
     numeric_cols: Sequence[int] = (),
+    striped: bool = True,
+    extra_class: str = "",
 ) -> ui.Tag:
     """Bootstrap table. Cells may be str, number or any shiny UI element.
 
@@ -29,6 +32,21 @@ def html_table(
         ui.tags.tr(*[cell(ui.tags.td, i, c) for i, c in enumerate(row)]) for row in rows
     ])
     return ui.div(
-        ui.tags.table(head, body, class_="table table-sm table-striped align-middle mb-0"),
+        ui.tags.table(
+            head, body,
+            class_=f"table table-sm {'table-striped ' if striped else ''}align-middle mb-0 {extra_class}".strip(),
+        ),
         class_="table-responsive",
     )
+
+
+def table1(frame: pd.DataFrame) -> ui.Tag:
+    """Render `summary.categorical_table1` output: bold variable rows, indented level rows."""
+    groups = [c for c in frame.columns if c not in ("Variable", "kind")]
+    header = ["Variable", *(["N (%)"] if groups == ["Overall"] else groups)]
+    rows = [
+        [ui.tags.b(r["Variable"]) if r["kind"] == "variable" else ui.span(r["Variable"], class_="ps-4"),
+         *[r[g] for g in groups]]
+        for _, r in frame.iterrows()
+    ]
+    return html_table(header, rows, striped=False, extra_class="table1")
